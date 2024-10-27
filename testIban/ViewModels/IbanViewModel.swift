@@ -6,16 +6,17 @@
 //
 import SwiftUI
 
-class IBANViewModel: ObservableObject {
+class IbanViewModel: ObservableObject {
     @Published var enteredIBAN: String = ""
     @Published var showScanner: Bool = false
     @Published var detectedIBAN: String? = nil
     
-    var ibanScanController = IBANScanController()
+    var ibanScanController = IbanScanController()
     
     init() {
         ibanScanController.onIBANDetected = { [weak self] detectedIBAN in
             self?.detectedIBAN = detectedIBAN
+            self?.ibanScanController.captureSession?.stopRunning()
         }
     }
     
@@ -26,8 +27,8 @@ class IBANViewModel: ObservableObject {
     }
     
     func stopScanning() {
-        ibanScanController.stopCaptureSession()
         showScanner = false
+        ibanScanController.stopCaptureSession()
     }
     
     func confirmIBAN() {
@@ -38,6 +39,9 @@ class IBANViewModel: ObservableObject {
     
     func retryScan() {
         detectedIBAN = nil
-        startScanning()
+        showScanner = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            self.ibanScanController.captureSession?.startRunning()
+        }
     }
 }

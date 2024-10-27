@@ -11,7 +11,7 @@ import SwiftUI
 struct testIbanApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AddBeneficiaryScreenView()
         }
     }
 }

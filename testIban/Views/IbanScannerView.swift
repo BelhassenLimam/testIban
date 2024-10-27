@@ -1,5 +1,5 @@
 //
-//  CameraScreenView.swift
+//  IbanScannerView.swift
 //  testIban
 //
 //  Created by Belhassen LIMAM on 27/10/2024.
@@ -8,8 +8,8 @@ import SwiftUI
 import AVFoundation
 import UIKit
 
-struct IBANScannerView: UIViewControllerRepresentable {
-    var ibanScanController: IBANScanController
+struct IbanScannerView: UIViewControllerRepresentable {
+    var ibanScanController: IbanScanController
     
     func makeUIViewController(context: Context) -> UIViewController {
         let viewController = UIViewController()
@@ -19,19 +19,12 @@ struct IBANScannerView: UIViewControllerRepresentable {
         previewLayer.frame = UIScreen.main.bounds
         viewController.view.layer.addSublayer(previewLayer)
         
-        let blurView = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
-        blurView.frame = UIScreen.main.bounds
-        blurView.alpha = 0.7
-        viewController.view.addSubview(blurView)
-        
         let detectionFrame = UIView()
         detectionFrame.frame.size = CGSize(width: 300, height: 100)
         detectionFrame.center = viewController.view.center
         detectionFrame.layer.borderColor = UIColor.red.cgColor
         detectionFrame.layer.borderWidth = 2
         viewController.view.addSubview(detectionFrame)
-        
-        blurView.mask = createMaskView(inside: detectionFrame.frame, for: blurView.bounds)
         
         return viewController
     }

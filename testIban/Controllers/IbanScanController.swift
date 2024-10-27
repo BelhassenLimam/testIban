@@ -8,56 +8,55 @@
 import AVFoundation
 import Vision
 
-class IBANScanController: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
+class IbanScanController: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     var onIBANDetected: ((String) -> Void)?
     let textRecognitionRequest = VNRecognizeTextRequest()
     var captureSession: AVCaptureSession?
-
+    
     override init() {
         super.init()
         configureTextRecognition()
     }
-
+    
     private func configureTextRecognition() {
         textRecognitionRequest.recognitionLevel = .accurate
         textRecognitionRequest.recognitionLanguages = ["fr", "en"]
         textRecognitionRequest.usesLanguageCorrection = true
     }
-
+    
     func startCaptureSession() {
         captureSession = AVCaptureSession()
         guard let captureSession = captureSession else { return }
-
+        
         guard let videoDevice = AVCaptureDevice.default(for: .video),
               let videoInput = try? AVCaptureDeviceInput(device: videoDevice),
               captureSession.canAddInput(videoInput) else { return }
-
+        
         captureSession.addInput(videoInput)
-
+        
         let videoOutput = AVCaptureVideoDataOutput()
         videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "videoQueue"))
         
         if captureSession.canAddOutput(videoOutput) {
             captureSession.addOutput(videoOutput)
         }
-
+        
         // Lancement de la session sur un thread en arrière-plan
         DispatchQueue.global(qos: .userInitiated).async {
             captureSession.startRunning()
         }
     }
-
+    
     func stopCaptureSession() {
         guard let captureSession = captureSession else { return }
         
         // Arrêt de la session sur un thread en arrière-plan
         DispatchQueue.global(qos: .userInitiated).async {
             captureSession.stopRunning()
+            self.captureSession = nil
         }
-
-        self.captureSession = nil
     }
-
+    
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         
@@ -72,13 +71,28 @@ class IBANScanController: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate
                 let ibanRegex = "[A-Z]{2}[0-9]{2}[A-Z0-9]{1,30}" // Regex pour l'IBAN
                 
                 if detectedText.range(of: ibanRegex, options: .regularExpression) != nil {
-                    DispatchQueue.main.async {
-                        self.onIBANDetected?(detectedText)
-                        self.stopCaptureSession()
+                    if detectedText.isValidFrenchIban() {
+                        DispatchQueue.main.async {
+                            self.onIBANDetected?(detectedText)
+                        }
+                        break
                     }
-                    break
                 }
             }
         }
+    }
+    
+    
+}
+
+extension String {
+    func isValidFrenchIban() -> Bool { // Valider si l'IBAN est bien un iban français
+        if self.count == 27 {
+            if self.prefix(2).elementsEqual("FR") {
+                return true
+            }
+        }
+
+        return false
     }
 }
